@@ -14,7 +14,9 @@ const routes = [
 ]
 
 export const router = createRouter({
-  history: createWebHistory(),
+  // BASE_URL учитывает префикс GitHub Pages (/pdf-price-to-website/),
+  // иначе корень сайта не совпадёт с роутом "/" и сработает редирект на 404.
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior: () => ({ top: 0 }),
 })
