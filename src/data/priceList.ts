@@ -36,6 +36,8 @@ export interface PriceTable {
   columns: string[]
   /** Индексы колонок (0-based) с числовыми значениями — выравнивание вправо */
   numericColumns: number[]
+  /** Индексы скрытых колонок (0-based) — данные остаются в массиве, но не выводятся */
+  hiddenColumns?: number[]
   groups: PriceGroup[]
   /** Сноска под таблицей */
   footnote?: string
@@ -61,6 +63,10 @@ export const priceListMeta: PriceListMeta = {
     'Цены указаны в рублях. РРЦ — рекомендованная розничная цена. Актуальное наличие ткани — на tkansklad.ru',
 }
 
+/** Видимые заголовки колонок таблицы (без скрытых) */
+export const priceTableVisibleColumns = (table: PriceTable): string[] =>
+  table.columns.filter((_, columnIndex) => !(table.hiddenColumns ?? []).includes(columnIndex))
+
 export const priceList: PriceTable[] = [
   // ─── 1. Ткани и акустические материалы ────────────────────────────────────
   {
@@ -75,6 +81,8 @@ export const priceList: PriceTable[] = [
       'Партнёр',
     ],
     numericColumns: [2, 3, 4, 5],
+    // 5 — «Партнёр»: скрыт по требованию, данные в строках сохранены
+    hiddenColumns: [5],
     groups: [
       {
         rows: [
@@ -123,6 +131,8 @@ export const priceList: PriceTable[] = [
       'Вес пачки',
     ],
     numericColumns: [2, 3, 4, 5, 6, 7, 8, 9],
+    // 4 — «Партнёр»: скрыт по требованию, данные в строках сохранены
+    hiddenColumns: [4],
     footnote: 'ТС ПРО продаётся в комплекте с АРГАПАЛ: 1 м² войлока на 1 м² плиты.',
     groups: [
       {
@@ -169,6 +179,9 @@ export const priceList: PriceTable[] = [
       'Мин. партия партнёра, м.п. (кратно пачке)',
     ],
     numericColumns: [1, 2, 3, 4, 5, 6, 7],
+    // 4 и 5 — «Партнёр (кратно пачке)» и «Партнёр, общая закупка…»: скрыты
+    // по требованию, данные в строках сохранены
+    hiddenColumns: [4, 5],
     groups: [
       {
         title: 'Профиль чёрный',
@@ -231,6 +244,8 @@ export const priceList: PriceTable[] = [
       'Мин. партия партнёра (кратно упаковке)',
     ],
     numericColumns: [2, 3, 4, 5, 6],
+    // 4 — «Партнёр (кратно пачке)»: скрыт по требованию, данные сохранены
+    hiddenColumns: [4],
     groups: [
       {
         title: 'Закладные',
@@ -299,6 +314,8 @@ export const priceList: PriceTable[] = [
     title: '5. Образцы',
     columns: ['Наименование', 'Ед. изм.', 'РРЦ', 'Дилер', 'Партнёр'],
     numericColumns: [2, 3, 4],
+    // 4 — «Партнёр»: скрыт по требованию, данные в строках сохранены
+    hiddenColumns: [4],
     groups: [
       {
         rows: [

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
-import { priceList } from '../data/priceList'
+import { priceList, priceTableVisibleColumns } from '../data/priceList'
 import PriceTable from '../components/PriceTable.vue'
 
 defineOptions({ name: 'TableView' })
@@ -19,7 +19,10 @@ const table = computed(() => priceList.find(item => item.id === tableId.value))
 const WIDE_TABLE_COLUMNS_MIN = 8
 const PRINT_ORIENTATION_STYLE_ID = 'print-page-orientation'
 
-const tableIsWide = computed(() => (table.value?.columns.length ?? 0) >= WIDE_TABLE_COLUMNS_MIN)
+// Ширину считаем по видимым колонкам — скрытые не должны влиять на ориентацию
+const tableIsWide = computed(() =>
+  table.value ? priceTableVisibleColumns(table.value).length >= WIDE_TABLE_COLUMNS_MIN : false,
+)
 
 watchEffect(() => {
   const existing = document.getElementById(PRINT_ORIENTATION_STYLE_ID)

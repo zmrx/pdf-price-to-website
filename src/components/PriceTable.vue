@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PriceCell, PriceRow, PriceTable } from '../data/priceList'
+import { priceTableVisibleColumns } from '../data/priceList'
 
 defineOptions({ name: 'PriceTable' })
 
@@ -20,15 +21,29 @@ interface RowCellView {
   columnIndex: number
 }
 
-/** Чистая трансформация: строка данных → ячейки с фактическими индексами колонок */
-const priceRowResolve = (row: PriceRow): RowCellView[] => {
+/** Чистая трансформация: строка данных → видимые ячейки с фактическими индексами колонок.
+ *  Скрытые колонки пропускаются; colspan ячейки ужимается на число скрытых колонок в её диапазоне. */
+const priceRowResolve = (row: PriceRow, hiddenColumns: number[]): RowCellView[] => {
   const result: RowCellView[] = []
   let columnIndex = 0
 
+  const spanHiddenCount = (start: number, span: number): number =>
+    Array.from({ length: span }, (_, offset) => start + offset).filter(index =>
+      hiddenColumns.includes(index),
+    ).length
+
   for (const rawCell of row.cells) {
     const cell = priceCellNormalize(rawCell)
-    result.push({ cell, columnIndex })
-    columnIndex += cell.colspan ?? 1
+    const span = cell.colspan ?? 1
+    const hiddenInSpan = spanHiddenCount(columnIndex, span)
+    const visibleSpan = span - hiddenInSpan
+
+    // Ячейка целиком в скрытых колонках — не выводим
+    if (visibleSpan > 0 && !hiddenColumns.includes(columnIndex)) {
+      result.push({ cell: { ...cell, colspan: cell.colspan ? visibleSpan : undefined }, columnIndex })
+    }
+
+    columnIndex += span
   }
 
   return result
@@ -40,15 +55,29 @@ interface GroupView {
   rows: RowCellView[][]
 }
 
+const hiddenColumns = computed(() => props.table.hiddenColumns ?? [])
+
+interface ColumnView {
+  title: string
+  /** Исходный индекс колонки — для проверки числовых колонок */
+  columnIndex: number
+}
+
+const columnsView = computed<ColumnView[]>(() =>
+  props.table.columns
+    .map((title, columnIndex) => ({ title, columnIndex }))
+    .filter(column => !hiddenColumns.value.includes(column.columnIndex)),
+)
+
 const groupsView = computed<GroupView[]>(() =>
   props.table.groups.map(group => ({
     title: group.title,
     note: group.note,
-    rows: group.rows.map(priceRowResolve),
+    rows: group.rows.map(row => priceRowResolve(row, hiddenColumns.value)),
   })),
 )
 
-const columnsTotal = computed(() => props.table.columns.length)
+const columnsTotal = computed(() => priceTableVisibleColumns(props.table).length)
 
 const columnIsNumeric = (columnIndex: number): boolean =>
   props.table.numericColumns.includes(columnIndex)
@@ -60,11 +89,11 @@ const columnIsNumeric = (columnIndex: number): boolean =>
       <thead>
         <tr>
           <th
-            v-for="(column, columnIndex) in table.columns"
-            :key="columnIndex"
-            :class="{ 'is-numeric': columnIsNumeric(columnIndex) }"
+            v-for="column in columnsView"
+            :key="column.columnIndex"
+            :class="{ 'is-numeric': columnIsNumeric(column.columnIndex) }"
           >
-            {{ column }}
+            {{ column.title }}
           </th>
         </tr>
       </thead>
